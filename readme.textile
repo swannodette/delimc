@@ -1,9 +1,12 @@
 h1. delimc
 
-A delimited continuations library for Clojure 1.3.0. Based on cl-cont by Slava Akhmechet (http://defmacro.org).
+A delimited continuations library for Clojure 1.3.0. Poritions based on cl-cont by Slava Akhmechet (http://defmacro.org).
 
 h1. References
 
+* "Literate Engines in Lisp":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.45.6198
+* "Threads Yield Continuations":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.41.4786
+* "Yield: Mainstream Delimited Continuations":http://parametricity.net/dropbox/yield.subc.pdf
 * "Composable Continuations Tutorial":http://community.schemewiki.org/?composable-continuations-tutorial
 * "A Monadic Framework for Subcontinuations":http://research.microsoft.com/en-us/um/people/simonpj/papers/control/control.pdf
 * "Subcontinuations":http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.63.1754&rep=rep1&type=pdf
