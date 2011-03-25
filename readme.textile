@@ -1,6 +1,6 @@
 h1. delimc
 
-A delimited continuations library for Clojure 1.3.0. Poritions based on cl-cont by Slava Akhmechet (http://defmacro.org).
+A delimited continuations library for Clojure 1.3.0. Portions based on cl-cont by Slava Akhmechet (http://defmacro.org).
 
 h1. References
 
