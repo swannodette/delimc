@@ -119,9 +119,8 @@
 (defn application->cps [app-sym acons k-expr args]
   (if (seq acons)
     (expr->cps (first acons)
-               (let [i         (gensym)
-                     rest-args (gensym)]
-                 `(fn [~i ~'& ~rest-args]
+               (let [i (gensym)]
+                 `(fn [~i ~'& rest-args#]
                     ~(application->cps app-sym (rest acons)
                                        k-expr
                                        (cons i args)))))
@@ -158,10 +157,8 @@
   (expr->cps (first expr-list)
              (if (nil? (seq (rest expr-list)))
                k-expr
-               (let [r         (gensym)
-                     rest-args (gensym)]
-                 `(fn [~r ~'& ~rest-args]
-                    ~(expr-sequence->cps (rest expr-list) k-expr))))))
+               `(fn [r# ~'& rest-args#]
+                  ~(expr-sequence->cps (rest expr-list) k-expr)))))
 
 (defcpstransformer do [acons k-expr]
   (expr-sequence->cps (rest acons) k-expr))
@@ -174,9 +171,8 @@
         avar-value   (if (seq? avar) (first (rest avar)))]
     (if (seq? avar)
       (expr->cps avar-value
-                 (let [rest-args (gensym)]
-                   `(fn [~avar-name ~'& ~rest-args]
-                      ~(let-varlist->cps (rest varlist) let-body k-expr))))
+                 `(fn [~avar-name ~'& rest-args#]
+                    ~(let-varlist->cps (rest varlist) let-body k-expr)))
       (expr-sequence->cps let-body k-expr))))
 
 (defcpstransformer let [[_ varlist & forms] k-expr]
@@ -234,12 +230,10 @@
 ;; --------------------------------------------------------------------------------
 (defcpstransformer if [[_ pred-expr pred-true-expr pred-false-expr] k-expr]
   (expr->cps pred-expr
-             (let [pred      (gensym)
-                   rest-args (gensym)]
-               `(fn [~pred ~'& ~rest-args]
-                  (if ~pred
-                    ~(expr->cps pred-true-expr k-expr)
-                    ~(expr->cps pred-false-expr k-expr))))))
+             `(fn [pred# ~'& rest-args#]
+                (if pred#
+                  ~(expr->cps pred-true-expr k-expr)
+                  ~(expr->cps pred-false-expr k-expr)))))
 (dosync
  (commute special-form-transformers assoc :if* (:if @special-form-transformers)))
 
@@ -250,15 +244,14 @@
     (expr-sequence->cps forms k-expr)))
 
 (defn transform-local-function [[fn-name fn-args & fn-forms :as afn]]
-  (let [k (gensym)]
-    (if (and fn-name (symbol? fn-name))
-      nil
-      (throw (Exception. "Function name must be non-nil symbol")))
-    (if (>= (count afn) 2)
-      nil
-      (throw (Exception. "Function arguments not specified")))
-    `(~fn-name [~k ~@fn-args]
-               (transform-forms-in-env ~fn-forms ~k ~ctx))))
+  (if (and fn-name (symbol? fn-name))
+    nil
+    (throw (Exception. "Function name must be non-nil symbol")))
+  (if (>= (count afn) 2)
+    nil
+    (throw (Exception. "Function arguments not specified")))
+  `(~fn-name [k# ~@fn-args]
+             (transform-forms-in-env ~fn-forms k# ~ctx)))
 
 (defn declare-function-names-local [fnames]
   (loop [result (:local-functions ctx) names fnames]
@@ -267,12 +260,11 @@
       (recur (conj result (first names)) (rest names)))))
 
 (defmacro with-local-function-names [names & body]
-  (let [fn-list (gensym)]
-    `(let [~fn-list ~names]
-       (do
-         (binding [ctx (assoc ctx :local-functions 
-                                (declare-function-names-local ~fn-list))]
-           ~@body)))))
+  `(let [fn-list# ~names]
+     (do
+       (binding [ctx (assoc ctx :local-functions 
+                            (declare-function-names-local fn-list#))]
+         ~@body))))
 
 (defcpstransformer letfn [[_ fn-list & forms :as acons] k-expr]
   (if (>= (count acons) 2)
