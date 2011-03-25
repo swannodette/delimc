@@ -555,16 +555,16 @@
   (is (= (with-call-cc (+ 1 (test-fn-cc-1 1 2)))
          4)))
 
-(def *test-fn-cc* (atom nil))
+(def test-fn-cc (atom nil))
 
 (defn-cc test-fn-cc-2 [a b]
   (+ a (let-cc k
-               (reset! *test-fn-cc* k)
+               (reset! test-fn-cc k)
                (k b))))
 
 (deftest defn-cc-3
   (is (= [(test-fn-cc-2 1 2)
-          (@*test-fn-cc* 10)]
+          (@test-fn-cc 10)]
            [3 11])))
 
 (defn-cc test-fn-cc-3 [a]
@@ -614,69 +614,3 @@
 (deftest ref-1
   (is (= @(with-call-cc (ref {}))
          @(ref {}))))
-
-;; dot special operator
-(deftest dot-1
-  (is (= (dot "Hello" (list 'substring 1 2))
-         "e")))
-
-;; java interop
-(deftest java-interop-1
-  (is (= (with-call-cc
-           (. "Hello" substring 1 2))
-         "e")))
-
-(deftest java-interop-2
-  (is (= (with-call-cc
-           (. "Hello" (substring 1 2)))
-         "e")))
-
-(deftest java-interop-3
-  (is (= (with-call-cc
-           (.. "Hello" (substring 1 3) (length)))
-         2)))
-
-(deftest java-interop-4
-  (is (= (with-call-cc
-           (new java.lang.String "Hello"))
-         "Hello")))
-
-(deftest java-interop-5
-  (is (= (with-call-cc
-           (doto (new java.util.HashMap)
-             (.put "a" 1)
-             (.put "b" 1)))
-         (doto (new java.util.HashMap)
-           (.put "a" 1)
-           (.put "b" 1)))))
-
-;; interesting since the method isn't a symbol
-;; we can't really change it's value
-(deftest java-interop-6
-  (is (= (let [cc (atom nil)]
-           [(with-call-cc
-              (. "Hello" substring (let-cc k
-                                           (reset! cc k)
-                                           (k 1)) 5))
-            (@cc 2)])
-         ["ello", "llo"])))
-
-(deftest java-interop-7
-  (is (= (let [cc (atom nil)]
-           [(with-call-cc
-              (. (let-cc k
-                         (reset! cc k)
-                         (k "Hello"))
-                 substring
-                 2))
-            (@cc "Goodbye")])
-         ["llo" "odbye"])))
-
-(deftest java-interop-8
-  (is (= (let [cc (atom nil)]
-           [(with-call-cc
-              (new (let-cc k
-                           (reset! cc k)
-                           (k String))))
-            (@cc java.util.HashMap)])
-         [(new String) (new java.util.HashMap)])))

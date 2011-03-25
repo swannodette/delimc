@@ -288,36 +288,3 @@
                       (transform-local-function afn))
                  fn-list)]
        (transform-forms-in-env ~forms ~k-expr ~ctx))))
-
-;; dot
-;; --------------------------------------------------------------------------------
-(defn dot [obj member-expr]
-  (let [member       (name (first member-expr))
-        arg-or-args  (rest member-expr)
-        args         (to-array (if (not-seq? arg-or-args)
-                                 [arg-or-args]
-                                 arg-or-args))]
-    (if (= (type obj) java.lang.Class)
-      (Reflector/invokeStaticMethod obj member args)
-      (Reflector/invokeInstanceMethod obj member args))))
-
-;; TODO: look at this.
-(defcpstransformer .
-  [acons k-expr]
-  (let [expr        (rest acons)
-        obj         (first expr)
-        member-expr (if (= (count (rest expr)) 1)
-                      (rest expr)
-                      (list (rest expr)))
-        member      (first (first member-expr))
-        args        (rest (first member-expr))]
-    (expr->cps `(dot ~obj (list (quote ~member) ~@args)) k-expr)))
-
-;; new
-;; --------------------------------------------------------------------------------
-(defn constructor [class & args]
-  (Reflector/invokeConstructor class (to-array args)))
-
-(defcpstransformer new
-  [[_ obj & args] k-expr]
-  (expr->cps `(constructor ~obj ~@args) k-expr))
