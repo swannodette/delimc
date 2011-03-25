@@ -48,10 +48,6 @@
 (defcpstransformer without-call-cc [cons k-expr]
   `(~k-expr (do ~@(rest cons))))
 
-(defmacro defn-cc [name arglist & body]
-  `(with-call-cc
-     (~'defn ~name [~@arglist] ~@body)))
-
 (declare lambda-expr->cps)
 
 (defcpstransformer defn [[_ name args & body] k-expr]

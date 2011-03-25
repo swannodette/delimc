@@ -2,18 +2,6 @@
   (:use [delimc.core] :reload)
   (:use [clojure.test]))
 
-;; with-call-cc and global environment
-(defmacro with-call-cc-env-test-macro [a]
-  `(+ ~a ~a))
-
-(defn-cc with-call-cc-env-test-fn []
-  (with-call-cc-env-test-macro 5))
-
-(deftest with-call-cc-env
-  (is (= (with-call-cc
-           (with-call-cc-env-test-fn))
-         10)))
-
 ;; not-seq
 (deftest not-seq-1
   (is (= (with-call-cc 1) 1)))
@@ -543,41 +531,7 @@
   (is (= (without-call-cc 1 2 3)
          3)))
 
-;; defn
-(defn-cc test-fn-cc-1 [a b]
-  (+ a b))
-
-(deftest defn-cc-1
-  (is (= (test-fn-cc-1 1 2)
-         3)))
-
-(deftest defn-cc-2
-  (is (= (with-call-cc (+ 1 (test-fn-cc-1 1 2)))
-         4)))
-
-(def test-fn-cc (atom nil))
-
-(defn-cc test-fn-cc-2 [a b]
-  (+ a (let-cc k
-               (reset! test-fn-cc k)
-               (k b))))
-
-(deftest defn-cc-3
-  (is (= [(test-fn-cc-2 1 2)
-          (@test-fn-cc 10)]
-           [3 11])))
-
-(defn-cc test-fn-cc-3 [a]
-  1)
-
-(deftest defn-cc-4
-  (is (= (test-fn-cc-3 10)
-         1)))
-
 ;; explicit apply
-(defn-cc add-cc-test [a b]
-  (+ a b))
-
 (deftest explicit-apply-1
   (is (= (let [cc (atom nil)]
            [(with-call-cc (+ 1 (apply (fn [a]
@@ -601,10 +555,6 @@
 (deftest explicit-apply-3
   (is (= (with-call-cc (apply + 1 2 3 (list 4 5)))
          15)))
-
-(deftest explicit-apply-4
-  (is (= (with-call-cc (apply add-cc-test 3 (list 4)))
-         7)))
 
 ;; ref/atom
 (deftest atom-1
