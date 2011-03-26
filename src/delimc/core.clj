@@ -38,14 +38,14 @@
 (declare expr-sequence->cps
          apply->cps)
 
-(defcpstransformer with-call-cc [cons k-expr]
+(defcpstransformer shift [cons k-expr]
   (expr-sequence->cps (rest cons) k-expr))
 
-(defmacro without-call-cc [& body]
+(defmacro unshift [& body]
   `(do
      ~@body))
 
-(defcpstransformer without-call-cc [cons k-expr]
+(defcpstransformer unshift [cons k-expr]
   `(~k-expr (do ~@(rest cons))))
 
 (declare lambda-expr->cps)
@@ -74,7 +74,7 @@
          expr-sequence->cps)
 
 ;; Gives access to call-cc by transforming body to continuation passing style."
-(defmacro with-call-cc [& body]
+(defmacro shift [& body]
   (binding [ctx (make-call-cc-context)]
     (expr-sequence->cps body identity)))
 
@@ -134,15 +134,15 @@
 ;; Special form transformers
 ;; ================================================================================
 
-(defn call-cc [cc]
-  (throw (Exception. "Please ensure call-cc is called from within with-call-cc macro.")))
+(defn reset* [cc]
+  (throw (Exception. "Please ensure reset is called from within the shift macro.")))
 
-(defmacro let-cc [k & body]
-  `(~'call-cc (fn [~k] ~@body)))
+(defmacro reset [k & body]
+  `(~'reset* (fn [~k] ~@body)))
 
-(defcpstransformer call-cc [cons k-expr]
+(defcpstransformer reset* [cons k-expr]
   (if (not (= (count cons) 2))
-    (throw (Exception. "Please ensure call-cc has one argument.")))
+    (throw (Exception. "Please ensure reset has one argument.")))
   `(~(first (rest cons)) ~k-expr))
 
 ;; quote
@@ -222,7 +222,7 @@
         (is-fn? (first fdesignator))) `(~k-expr ~(lambda-expr->cps fdesignator k-expr))))
 
 (defmacro fn-cc [args-list & body]
-  `(with-call-cc
+  `(shift
      (fn [~@args-list]
        ~@body)))
 
