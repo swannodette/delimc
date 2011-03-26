@@ -3,11 +3,13 @@ h1. delimc
 A delimited continuations library for Clojure 1.3.0. Portions based on cl-cont by Slava Akhmechet (http://defmacro.org).
 
 <pre>
-(def cont (atom nil))
- 
+(def cont1 (atom nil))
+(def cont2 (atom nil))
+(def cont3 (atom nil))
+
 (reset (+ 1 (apply (fn [a b c]
                      (+ (shift k
-                          (reset! cont k)
+                          (reset! cont1 k)
                             (k 1))
                          a b c))
                     3 4 (list 5)))) ;; 14
