@@ -13,6 +13,17 @@ A delimited continuations library for Clojure 1.3.0. Portions based on cl-cont b
                     3 4 (list 5)))) ;; 14
 
 (@cont 2) ;; 15
+
+(shift
+  (+ 1 (shift (reset k
+                (reset! cont2 k)
+                (k 2)))
+       (shift (reset k
+                (reset! cont3 k)
+                (k 3))))) ;; 6
+
+(@cont2 4) ;; 8
+(@cont3 10) ;; 15
 </pre>
 
 h1. References
