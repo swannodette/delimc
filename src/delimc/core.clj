@@ -38,14 +38,14 @@
 (declare expr-sequence->cps
          apply->cps)
 
-(defcpstransformer shift [cons k-expr]
+(defcpstransformer reset [cons k-expr]
   (expr-sequence->cps (rest cons) k-expr))
 
-(defmacro unshift [& body]
+(defmacro unreset [& body]
   `(do
      ~@body))
 
-(defcpstransformer unshift [cons k-expr]
+(defcpstransformer unreset [cons k-expr]
   `(~k-expr (do ~@(rest cons))))
 
 (declare lambda-expr->cps)
@@ -74,7 +74,7 @@
          expr-sequence->cps)
 
 ;; Gives access to call-cc by transforming body to continuation passing style."
-(defmacro shift [& body]
+(defmacro reset [& body]
   (binding [ctx (make-call-cc-context)]
     (expr-sequence->cps body identity)))
 
@@ -134,15 +134,15 @@
 ;; Special form transformers
 ;; ================================================================================
 
-(defn reset* [cc]
-  (throw (Exception. "Please ensure reset is called from within the shift macro.")))
+(defn shift* [cc]
+  (throw (Exception. "Please ensure shift is called from within the reset macro.")))
 
-(defmacro reset [k & body]
-  `(~'reset* (fn [~k] ~@body)))
+(defmacro shift [k & body]
+  `(~'shift* (fn [~k] ~@body)))
 
-(defcpstransformer reset* [cons k-expr]
+(defcpstransformer shift* [cons k-expr]
   (if (not (= (count cons) 2))
-    (throw (Exception. "Please ensure reset has one argument.")))
+    (throw (Exception. "Please ensure shift has one argument.")))
   `(~(first (rest cons)) ~k-expr))
 
 ;; quote
@@ -222,7 +222,7 @@
         (is-fn? (first fdesignator))) `(~k-expr ~(lambda-expr->cps fdesignator k-expr))))
 
 (defmacro fn-cc [args-list & body]
-  `(shift
+  `(reset
      (fn [~@args-list]
        ~@body)))
 
