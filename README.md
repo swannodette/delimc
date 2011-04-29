@@ -40,11 +40,11 @@ A delimited continuations library for Clojure 1.2.0 (and 1.3.0). Portions based 
 References
 ----
 
-* "Literate Engines in Lisp":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.45.6198
-* "Threads Yield Continuations":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.41.4786
-* "Yield: Mainstream Delimited Continuations":http://parametricity.net/dropbox/yield.subc.pdf
-* "Composable Continuations Tutorial":http://community.schemewiki.org/?composable-continuations-tutorial
-* "A Monadic Framework for Subcontinuations":http://research.microsoft.com/en-us/um/people/simonpj/papers/control/control.pdf
-* "Subcontinuations":http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.63.1754&rep=rep1&type=pdf
-* "Models of Control and Their Implicatations for Programming Languages":www.ccs.neu.edu/racket/pubs/thesis-sitaram.ps.gz
-* "Monads and Composable Continuations":http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.94.985&rep=rep1&type=pdf
+* [Literate Engines in Lisp](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.45.6198)
+* [Threads Yield Continuations](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.41.4786)
+* [Yield: Mainstream Delimited Continuations](http://parametricity.net/dropbox/yield.subc.pdf)
+* [Composable Continuations Tutorial](http://community.schemewiki.org/?composable-continuations-tutorial)
+* [A Monadic Framework for Subcontinuations](http://research.microsoft.com/en-us/um/people/simonpj/papers/control/control.pdf)
+* [Subcontinuations](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.63.1754&rep=rep1&type=pdf)
+* [Models of Control and Their Implicatations for Programming Languages](www.ccs.neu.edu/racket/pubs/thesis-sitaram.ps.gz)
+* [Monads and Composable Continuations](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.94.985&rep=rep1&type=pdf)
