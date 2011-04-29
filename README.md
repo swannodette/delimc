@@ -33,7 +33,8 @@ A delimited continuations library for Clojure 1.3.0. Portions based on cl-cont b
                       (reset! cont4 k)
                         (k ", today is "))
             "a nice day!")) ; "Hello, today is a nice day"
-  (@cont4 ", yesterday was ") ; "Hello, yesterday was a nice day"
+
+(@cont4 ", yesterday was ") ; "Hello, yesterday was a nice day"
 ```
 
 References
