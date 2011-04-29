@@ -1,7 +1,7 @@
 delimc
 ----
 
-A delimited continuations library for Clojure 1.3.0. Portions based on cl-cont by Slava Akhmechet (http://defmacro.org).
+A delimited continuations library for Clojure 1.2.0 (and 1.3.0). Portions based on cl-cont by Slava Akhmechet (http://defmacro.org).
 
 ```clj
 (def cont1 (atom nil))
