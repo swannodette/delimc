@@ -1,8 +1,9 @@
-h1. delimc
+delimc
+----
 
 A delimited continuations library for Clojure 1.3.0. Portions based on cl-cont by Slava Akhmechet (http://defmacro.org).
 
-<pre>
+```clj
 (def cont1 (atom nil))
 (def cont2 (atom nil))
 (def cont3 (atom nil))
@@ -26,9 +27,16 @@ A delimited continuations library for Clojure 1.3.0. Portions based on cl-cont b
 
 (@cont2 4) ;; 8
 (@cont3 10) ;; 15
-</pre>
 
-h1. References
+(reset (str "Hello" (shift k
+                      (reset! cont4 k)
+                        (k ", today is "))
+            "a nice day!")) ; "Hello, today is a nice day"
+  (@cont4 ", yesterday was ") ; "Hello, yesterday was a nice day"
+```
+
+References
+----
 
 * "Literate Engines in Lisp":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.45.6198
 * "Threads Yield Continuations":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.41.4786
