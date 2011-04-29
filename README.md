@@ -7,6 +7,7 @@ A delimited continuations library for Clojure 1.3.0. Portions based on cl-cont b
 (def cont1 (atom nil))
 (def cont2 (atom nil))
 (def cont3 (atom nil))
+(def cont4 (atom nil))
 
 (reset (+ 1 (apply (fn [a b c]
                      (+ (shift k
