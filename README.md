@@ -16,7 +16,7 @@ A delimited continuations library for Clojure 1.2.0 (and 1.3.0). Portions based 
                          a b c))
                     3 4 (list 5)))) ;; 14
 
-(@cont 2) ;; 15
+(@cont1 2) ;; 15
 
 (reset
   (+ 1 (reset (shift k
