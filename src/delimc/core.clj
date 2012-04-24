@@ -1,82 +1,14 @@
 (ns delimc.core)
 
-;; ================================================================================
-;; Utilities
-;; ================================================================================
-
 (def ^:dynamic *ctx* nil)
+
+(defrecord Context [local-functions])
 
 ;; ================================================================================
 ;; CPS Transformer
 ;; ================================================================================
 
 (defmulti transform (fn [[op & forms] k-expr] (keyword op)))
-
-(defrecord Context [local-functions])
-
-;; ================================================================================
-;; Helper Transformers
-;; ================================================================================
-
-(declare expr-sequence->cps
-         apply->cps)
-
-(defmethod transform :reset [cons k-expr]
-  (expr-sequence->cps (rest cons) k-expr))
-
-(defmacro unreset [& body]
-  `(do
-     ~@body))
-
-(defmethod transform :unreset [cons k-expr]
-  `(~k-expr (do ~@(rest cons))))
-
-(declare lambda-expr->cps)
-
-(defmethod transform :defn [[_ name args & body] k-expr]
-  `(do
-     (def ~name
-          ~(lambda-expr->cps `(fn [~@args]
-                                ~@body)
-                             nil))
-     (~k-expr ~name)))
-
-(defmethod transform :apply [cons k-expr]
-  (apply->cps (rest cons) k-expr nil))
-
-;; ================================================================================
-;; Walker
-;; ================================================================================
-
-(declare expr->cps
-         atom->cps
-         cons->cps
-         application->cps
-         apply->cps
-         funcall->cps
-         expr-sequence->cps)
-
-;; Gives access to call-cc by transforming body to continuation passing style."
-(defmacro reset [& body]
-  (binding [*ctx* (Context. nil)]
-    (expr-sequence->cps body identity)))
-
-(defn expr->cps [expr k-expr]
-  (if (seq? expr)
-    (cons->cps expr k-expr)
-    (atom->cps expr k-expr)))
-
-(defn atom->cps [atom k-expr]
-  `(~k-expr ~atom))
-
-(defn funcall->cps [acons k-expr args]
-  (application->cps 'funcall-cc acons k-expr args))
-
-;; we need to mark functions for transformation
-(def function identity)
-
-(defn expanded? [original expansion]
-  (not= original expansion))
 
 (defn is-fn? [fdesignator]
   (#{'fn 'clojure.core/fn 'clojure.core/fn* 'fn*} fdesignator))
@@ -87,16 +19,22 @@
       `(~'function ~form)
       form)))
 
-(defmethod transform :default [acons k-expr]
-  (let [expansion (macroexpand-1 acons)
-        expanded-p (expanded? acons expansion)]
-    (if expanded-p
-      (expr->cps expansion k-expr)
-      (funcall->cps
-       (cons `(~'function ~(first expansion)) (rest expansion)) k-expr nil))))
+(defn atom->cps [atom k-expr]
+  `(~k-expr ~atom))
 
 (defn cons->cps [acons k-expr]
   (transform (check-for-fn acons) k-expr))
+
+(defn expr->cps [expr k-expr]
+  (if (seq? expr)
+    (cons->cps expr k-expr)
+    (atom->cps expr k-expr)))
+
+;; we need to mark functions for transformation
+(def function identity)
+
+(defn expanded? [original expansion]
+  (not= original expansion))
 
 (defn application->cps [app-sym acons k-expr args]
   (if (seq acons)
@@ -108,6 +46,17 @@
                                        (cons i args)))))
     (let [r-args (reverse args)]
       `(~app-sym ~(first r-args) ~k-expr ~@(rest r-args)))))
+
+(defn funcall->cps [acons k-expr args]
+  (application->cps 'funcall-cc acons k-expr args))
+
+(defmethod transform :default [acons k-expr]
+  (let [expansion (macroexpand-1 acons)
+        expanded-p (expanded? acons expansion)]
+    (if expanded-p
+      (expr->cps expansion k-expr)
+      (funcall->cps
+       (cons `(~'function ~(first expansion)) (rest expansion)) k-expr nil))))
 
 (defn apply->cps [acons k-expr args]
   (application->cps 'apply-cc acons k-expr args))
@@ -165,7 +114,12 @@
 
 ;; function
 ;; --------------------------------------------------------------------------------
-(declare fdesignator-to-function-cc)
+
+(defn fdesignator-to-function-cc [afn]
+  (if (:funcallable (meta afn))
+    (:fn (meta afn))
+    (fn [k & args]
+      (k (apply afn args)))))
 
 (defn funcall-cc [afn k & args]
   (apply (fdesignator-to-function-cc afn) k args))
@@ -182,12 +136,6 @@
 (defn make-funcallable [afn]
   (with-meta (fn [& args] (apply afn identity args)) {:funcallable true, :fn afn}))
 
-(defn fdesignator-to-function-cc [afn]
-  (if (:funcallable (meta afn))
-    (:fn (meta afn))
-    (fn [k & args]
-      (k (apply afn args)))))
-
 (defmethod transform :function [[_ fdesignator :as acons] k-expr]
   (cond
    (not (seq? fdesignator)) (if (some #{fdesignator} (:local-functions *ctx*))
@@ -195,11 +143,6 @@
                               `(~k-expr ~acons))
    (and (seq? (seq fdesignator))
         (is-fn? (first fdesignator))) `(~k-expr ~(lambda-expr->cps fdesignator k-expr))))
-
-(defmacro fn-cc [args-list & body]
-  `(reset
-     (fn [~@args-list]
-       ~@body)))
 
 ;; if
 ;; --------------------------------------------------------------------------------
@@ -249,3 +192,37 @@
                       (transform-local-function afn))
                  fn-list)]
        (transform-forms-in-env ~forms ~k-expr ~*ctx*))))
+
+;; ================================================================================
+;; Helper Transformers
+;; ================================================================================
+
+(defmethod transform :reset [cons k-expr]
+  (expr-sequence->cps (rest cons) k-expr))
+
+(defmacro unreset [& body]
+  `(do ~@body))
+
+(defmethod transform :unreset [cons k-expr]
+  `(~k-expr (do ~@(rest cons))))
+
+(defmethod transform :defn [[_ name args & body] k-expr]
+  `(do
+     (def ~name
+          ~(lambda-expr->cps `(fn [~@args]
+                                ~@body)
+                             nil))
+     (~k-expr ~name)))
+
+(defmethod transform :apply [cons k-expr]
+  (apply->cps (rest cons) k-expr nil))
+
+;; Gives access to call-cc by transforming body to continuation passing style."
+(defmacro reset [& body]
+  (binding [*ctx* (Context. nil)]
+    (expr-sequence->cps body identity)))
+
+(defmacro fn-cc [args-list & body]
+  `(reset
+     (fn [~@args-list]
+       ~@body)))
