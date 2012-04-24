@@ -15,12 +15,11 @@
 ;; CPS Transformer
 ;; ================================================================================
 
-(def special-form-transformers (ref {}))
+(def special-form-transformers (atom {}))
 
 (defmacro defcpstransformer [name lambda-list & body]
-  `(dosync
-    (commute special-form-transformers assoc ~(keyword (str name))
-             (fn [~@lambda-list] ~@body))))
+  `(swap! special-form-transformers assoc ~(keyword (str name))
+          (fn [~@lambda-list] ~@body)))
 
 (defn cpstransformer [name]
   (name @special-form-transformers))
@@ -177,8 +176,7 @@
 (defcpstransformer let [[_ varlist & forms] k-expr]
   (let-varlist->cps (partition 2 varlist) forms k-expr))
 
-(dosync
- (commute special-form-transformers assoc :let* (:let @special-form-transformers)))
+(swap! special-form-transformers assoc :let* (:let @special-form-transformers))
 
 ;; function
 ;; --------------------------------------------------------------------------------
@@ -233,8 +231,7 @@
                 (if pred#
                   ~(expr->cps pred-true-expr k-expr)
                   ~(expr->cps pred-false-expr k-expr)))))
-(dosync
- (commute special-form-transformers assoc :if* (:if @special-form-transformers)))
+(swap! special-form-transformers assoc :if* (:if @special-form-transformers))
 
 ;; letfn
 ;; --------------------------------------------------------------------------------
