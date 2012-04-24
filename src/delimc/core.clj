@@ -232,11 +232,9 @@
     (expr-sequence->cps forms k-expr)))
 
 (defn transform-local-function [[fn-name fn-args & fn-forms :as afn]]
-  (if (and fn-name (symbol? fn-name))
-    nil
+  (when-not (and fn-name (symbol? fn-name))
     (throw (Exception. "Function name must be non-nil symbol")))
-  (if (>= (count afn) 2)
-    nil
+  (when (< (count afn) 2)
     (throw (Exception. "Function arguments not specified")))
   `(~fn-name [k# ~@fn-args]
              (transform-forms-in-env ~fn-forms k# ~*ctx*)))
@@ -255,8 +253,7 @@
          ~@body))))
 
 (defmethod transform :letfn [[_ fn-list & forms :as acons] k-expr]
-  (if (>= (count acons) 2)
-    nil
+  (when (< (count acons) 2)
     (throw (Exception. "Too few parameters to letfn")))
   (with-local-function-names
     (map first fn-list)
