@@ -76,16 +76,13 @@
 (def function identity)
 
 (defn expanded? [original expansion]
-  (not (= original expansion)))
+  (not= original expansion))
 
 (defn check-for-fn [form]
   (let [sym (first form)]
-    (if (and (not (= sym 'fn))
-             (not (= sym 'clojure.core/fn))
-             (not (= sym 'clojure.core/fn*))
-             (not (= sym 'fn*)))
-      form
-      `(~'function ~form))))
+    (if (#{'fn 'clojure.core/fn 'clojure.core/fn* 'fn*} sym)
+      `(~'function ~form)
+      form)))
 
 (defmethod transform :default [acons k-expr]
   (let [expansion (macroexpand-1 acons)
@@ -123,7 +120,7 @@
   `(~'shift* (fn [~k] ~@body)))
 
 (defmethod transform :shift* [cons k-expr]
-  (if (not (= (count cons) 2))
+  (when-not (= (count cons) 2)
     (throw (Exception. "Please ensure shift has one argument.")))
   `(~(first (rest cons)) ~k-expr))
 
@@ -236,7 +233,7 @@
 
 (defn declare-function-names-local [fnames]
   (loop [result (:local-functions *ctx*) names fnames]
-    (if (= (seq names) nil)
+    (if (nil? (seq names))
       result
       (recur (conj result (first names)) (rest names)))))
 
@@ -244,7 +241,7 @@
   `(let [fn-list# ~names]
      (do
        (binding [*ctx* (assoc *ctx* :local-functions
-                            (declare-function-names-local fn-list#))]
+                              (declare-function-names-local fn-list#))]
          ~@body))))
 
 (defmethod transform :letfn [[_ fn-list & forms :as acons] k-expr]
