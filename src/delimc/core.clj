@@ -8,21 +8,11 @@
 
 (def not-seq? (comp not seq?))
 
-(defn sym-to-key [sym]
-  (keyword (str sym)))
-
 ;; ================================================================================
 ;; CPS Transformer
 ;; ================================================================================
 
-(def special-form-transformers (atom {}))
-
-(defmacro defcpstransformer [name lambda-list & body]
-  `(swap! special-form-transformers assoc ~(keyword (str name))
-          (fn [~@lambda-list] ~@body)))
-
-(defn cpstransformer [name]
-  (name @special-form-transformers))
+(defmulti transform (fn [[op & forms] k-expr] (keyword op)))
 
 (defstruct call-cc-context :local-functions)
 
@@ -36,19 +26,19 @@
 (declare expr-sequence->cps
          apply->cps)
 
-(defcpstransformer reset [cons k-expr]
+(defmethod transform :reset [cons k-expr]
   (expr-sequence->cps (rest cons) k-expr))
 
 (defmacro unreset [& body]
   `(do
      ~@body))
 
-(defcpstransformer unreset [cons k-expr]
+(defmethod transform :unreset [cons k-expr]
   `(~k-expr (do ~@(rest cons))))
 
 (declare lambda-expr->cps)
 
-(defcpstransformer defn [[_ name args & body] k-expr]
+(defmethod transform :defn [[_ name args & body] k-expr]
   `(do
      (def ~name
           ~(lambda-expr->cps `(fn [~@args]
@@ -56,7 +46,7 @@
                              nil))
      (~k-expr ~name)))
 
-(defcpstransformer apply [cons k-expr]
+(defmethod transform :apply [cons k-expr]
   (apply->cps (rest cons) k-expr nil))
 
 ;; ================================================================================
@@ -102,17 +92,16 @@
       form
       `(~'function ~form))))
 
+(defmethod transform :default [acons k-expr]
+  (let [expansion (macroexpand-1 acons)
+        expanded-p (expanded? acons expansion)]
+    (if expanded-p
+      (expr->cps expansion k-expr)
+      (funcall->cps
+       (cons `(~'function ~(first expansion)) (rest expansion)) k-expr nil))))
+
 (defn cons->cps [acons k-expr]
-  (let [acons       (check-for-fn acons)
-        transformer ((sym-to-key (first acons)) @special-form-transformers)]
-    (if transformer
-      (transformer acons k-expr)
-      (let [expansion (macroexpand-1 acons)
-            expanded-p (expanded? acons expansion)]
-        (if expanded-p
-          (expr->cps expansion k-expr)
-          (funcall->cps
-           (cons `(~'function ~(first expansion)) (rest expansion)) k-expr nil))))))
+  (transform (check-for-fn acons) k-expr))
 
 (defn application->cps [app-sym acons k-expr args]
   (if (seq acons)
@@ -138,14 +127,14 @@
 (defmacro shift [k & body]
   `(~'shift* (fn [~k] ~@body)))
 
-(defcpstransformer shift* [cons k-expr]
+(defmethod transform :shift* [cons k-expr]
   (if (not (= (count cons) 2))
     (throw (Exception. "Please ensure shift has one argument.")))
   `(~(first (rest cons)) ~k-expr))
 
 ;; quote
 ;; --------------------------------------------------------------------------------
-(defcpstransformer quote
+(defmethod transform :quote
   [acons k-expr]
   `(~k-expr ~acons))
 
@@ -158,7 +147,7 @@
                `(fn [r# ~'& rest-args#]
                   ~(expr-sequence->cps (rest expr-list) k-expr)))))
 
-(defcpstransformer do [acons k-expr]
+(defmethod transform :do [acons k-expr]
   (expr-sequence->cps (rest acons) k-expr))
 
 ;; let
@@ -173,10 +162,11 @@
                     ~(let-varlist->cps (rest varlist) let-body k-expr)))
       (expr-sequence->cps let-body k-expr))))
 
-(defcpstransformer let [[_ varlist & forms] k-expr]
+(defmethod transform :let [[_ varlist & forms] k-expr]
   (let-varlist->cps (partition 2 varlist) forms k-expr))
 
-(swap! special-form-transformers assoc :let* (:let @special-form-transformers))
+(defmethod transform :let* [[_ & forms] k-expr]
+  (transform (cons :let forms) k-expr))
 
 ;; function
 ;; --------------------------------------------------------------------------------
@@ -210,7 +200,7 @@
       (= fdesignator 'fn)
       (= fdesignator 'fn*)))
 
-(defcpstransformer function [[_ fdesignator :as acons] k-expr]
+(defmethod transform :function [[_ fdesignator :as acons] k-expr]
   (cond
    (not-seq? fdesignator) (if (some #{fdesignator} (:local-functions *ctx*))
                             `(~k-expr (make-funcallable ~acons))
@@ -225,13 +215,15 @@
 
 ;; if
 ;; --------------------------------------------------------------------------------
-(defcpstransformer if [[_ pred-expr pred-true-expr pred-false-expr] k-expr]
+(defmethod transform :if [[_ pred-expr pred-true-expr pred-false-expr] k-expr]
   (expr->cps pred-expr
              `(fn [pred# ~'& rest-args#]
                 (if pred#
                   ~(expr->cps pred-true-expr k-expr)
                   ~(expr->cps pred-false-expr k-expr)))))
-(swap! special-form-transformers assoc :if* (:if @special-form-transformers))
+
+(defmethod transform :if* [[_ & forms] k-expr]
+  (transform (cons :if forms) k-expr))
 
 ;; letfn
 ;; --------------------------------------------------------------------------------
@@ -262,7 +254,7 @@
                             (declare-function-names-local fn-list#))]
          ~@body))))
 
-(defcpstransformer letfn [[_ fn-list & forms :as acons] k-expr]
+(defmethod transform :letfn [[_ fn-list & forms :as acons] k-expr]
   (if (>= (count acons) 2)
     nil
     (throw (Exception. "Too few parameters to letfn")))
