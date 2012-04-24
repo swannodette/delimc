@@ -1,5 +1,4 @@
-(ns delimc.core
-  (:import [clojure.lang Reflector]))
+(ns delimc.core)
 
 ;; ================================================================================
 ;; Utilities
