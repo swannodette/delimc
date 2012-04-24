@@ -4,7 +4,7 @@
 ;; Utilities
 ;; ================================================================================
 
-(def ^:dynamic ctx nil)
+(def ^:dynamic *ctx* nil)
 
 (def not-seq? (comp not seq?))
 
@@ -73,7 +73,7 @@
 
 ;; Gives access to call-cc by transforming body to continuation passing style."
 (defmacro reset [& body]
-  (binding [ctx (make-call-cc-context)]
+  (binding [*ctx* (make-call-cc-context)]
     (expr-sequence->cps body identity)))
 
 (defn expr->cps [expr k-expr]
@@ -212,7 +212,7 @@
 
 (defcpstransformer function [[_ fdesignator :as acons] k-expr]
   (cond
-   (not-seq? fdesignator) (if (some #{fdesignator} (:local-functions ctx))
+   (not-seq? fdesignator) (if (some #{fdesignator} (:local-functions *ctx*))
                             `(~k-expr (make-funcallable ~acons))
                             `(~k-expr ~acons))
    (and (seq? (seq fdesignator))
@@ -236,7 +236,7 @@
 ;; letfn
 ;; --------------------------------------------------------------------------------
 (defmacro transform-forms-in-env [forms k-expr transf-env]
-  (binding [ctx transf-env]
+  (binding [*ctx* transf-env]
     (expr-sequence->cps forms k-expr)))
 
 (defn transform-local-function [[fn-name fn-args & fn-forms :as afn]]
@@ -247,10 +247,10 @@
     nil
     (throw (Exception. "Function arguments not specified")))
   `(~fn-name [k# ~@fn-args]
-             (transform-forms-in-env ~fn-forms k# ~ctx)))
+             (transform-forms-in-env ~fn-forms k# ~*ctx*)))
 
 (defn declare-function-names-local [fnames]
-  (loop [result (:local-functions ctx) names fnames]
+  (loop [result (:local-functions *ctx*) names fnames]
     (if (= (seq names) nil)
       result
       (recur (conj result (first names)) (rest names)))))
@@ -258,7 +258,7 @@
 (defmacro with-local-function-names [names & body]
   `(let [fn-list# ~names]
      (do
-       (binding [ctx (assoc ctx :local-functions
+       (binding [*ctx* (assoc *ctx* :local-functions
                             (declare-function-names-local fn-list#))]
          ~@body))))
 
@@ -271,4 +271,4 @@
     `(letfn [~@(map (fn [afn]
                       (transform-local-function afn))
                  fn-list)]
-       (transform-forms-in-env ~forms ~k-expr ~ctx))))
+       (transform-forms-in-env ~forms ~k-expr ~*ctx*))))
