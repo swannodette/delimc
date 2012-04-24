@@ -78,9 +78,12 @@
 (defn expanded? [original expansion]
   (not= original expansion))
 
+(defn is-fn? [fdesignator]
+  (#{'fn 'clojure.core/fn 'clojure.core/fn* 'fn*} fdesignator))
+
 (defn check-for-fn [form]
   (let [sym (first form)]
-    (if (#{'fn 'clojure.core/fn 'clojure.core/fn* 'fn*} sym)
+    (if (is-fn? sym)
       `(~'function ~form)
       form)))
 
@@ -184,13 +187,6 @@
     (:fn (meta afn))
     (fn [k & args]
       (k (apply afn args)))))
-
-;; refactor
-(defn is-fn? [fdesignator]
-  (or (= fdesignator 'clojure.core/fn)
-      (= fdesignator 'clojure.core/fn*)
-      (= fdesignator 'fn)
-      (= fdesignator 'fn*)))
 
 (defmethod transform :function [[_ fdesignator :as acons] k-expr]
   (cond
