@@ -14,10 +14,7 @@
 
 (defmulti transform (fn [[op & forms] k-expr] (keyword op)))
 
-(defstruct call-cc-context :local-functions)
-
-(defn make-call-cc-context []
-  (struct call-cc-context nil))
+(defrecord Context [local-functions])
 
 ;; ================================================================================
 ;; Helper Transformers
@@ -63,7 +60,7 @@
 
 ;; Gives access to call-cc by transforming body to continuation passing style."
 (defmacro reset [& body]
-  (binding [*ctx* (make-call-cc-context)]
+  (binding [*ctx* (Context. nil)]
     (expr-sequence->cps body identity)))
 
 (defn expr->cps [expr k-expr]
