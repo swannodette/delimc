@@ -8,7 +8,7 @@
 
 (deftest not-seq-2
   (is (= (let [cc (atom nil)]
-           [(reset 
+           [(reset
              (shift k
                     (reset! cc k)
                     (@cc 1)))
@@ -16,8 +16,8 @@
          [1 2])))
 
 ;; funcall
-(deftest funcall-1 
-  (is (= (reset (+ 1 2)) 
+(deftest funcall-1
+  (is (= (reset (+ 1 2))
          3)))
 
 (deftest funcall-2
@@ -86,7 +86,7 @@
          [42 84])))
 
 ;; quote
-(deftest quote-1 
+(deftest quote-1
   (is (= (reset 'a) 'a)))
 
 (deftest quote-2
@@ -94,7 +94,7 @@
 
 (deftest quote-3
   (is (= (let [cc (atom nil)]
-           [(reset 
+           [(reset
              (concat '(a b)
                      (shift k
                             (reset! cc k)
@@ -148,7 +148,7 @@
 (deftest if-3
   (is (= (let [cc (atom nil)]
            [(reset
-             (if true 
+             (if true
                (shift k
                       (reset! cc k)
                       (k 1))
@@ -159,10 +159,10 @@
 (deftest if-4
   (is (= (let [cc (atom nil)]
            (reset
-            (if nil 
+            (if nil
               (shift k
                      (reset! cc k)
-                     (k 1)) 
+                     (k 1))
               2))
            @cc)
          nil)))
@@ -386,7 +386,7 @@
             (if-let [a nil]
               (shift k
                      (reset! cc k)
-                     (k 1)) 
+                     (k 1))
               2))
            @cc)
          nil)))
@@ -439,7 +439,7 @@
 
 (deftest letfn-3
   (is (= (let [cc (atom nil)]
-           [(reset 
+           [(reset
              (letfn [(a [i] (+ i (shift k
                                         (reset! cc k)
                                         (k 2))))

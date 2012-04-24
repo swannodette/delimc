@@ -66,9 +66,9 @@
 ;; ================================================================================
 
 (declare expr->cps
-         atom->cps 
-         cons->cps 
-         application->cps 
+         atom->cps
+         cons->cps
+         application->cps
          apply->cps
          funcall->cps
          expr-sequence->cps)
@@ -113,7 +113,7 @@
             expanded-p (expanded? acons expansion)]
         (if expanded-p
           (expr->cps expansion k-expr)
-          (funcall->cps 
+          (funcall->cps
            (cons `(~'function ~(first expansion)) (rest expansion)) k-expr nil))))))
 
 (defn application->cps [app-sym acons k-expr args]
@@ -147,7 +147,7 @@
 
 ;; quote
 ;; --------------------------------------------------------------------------------
-(defcpstransformer quote 
+(defcpstransformer quote
   [acons k-expr]
   `(~k-expr ~acons))
 
@@ -262,7 +262,7 @@
 (defmacro with-local-function-names [names & body]
   `(let [fn-list# ~names]
      (do
-       (binding [ctx (assoc ctx :local-functions 
+       (binding [ctx (assoc ctx :local-functions
                             (declare-function-names-local fn-list#))]
          ~@body))))
 
@@ -270,7 +270,7 @@
   (if (>= (count acons) 2)
     nil
     (throw (Exception. "Too few parameters to letfn")))
-  (with-local-function-names 
+  (with-local-function-names
     (map first fn-list)
     `(letfn [~@(map (fn [afn]
                       (transform-local-function afn))
