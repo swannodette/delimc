@@ -6,8 +6,6 @@
 
 (def ^:dynamic *ctx* nil)
 
-(def not-seq? (comp not seq?))
-
 ;; ================================================================================
 ;; CPS Transformer
 ;; ================================================================================
@@ -64,9 +62,9 @@
     (expr-sequence->cps body identity)))
 
 (defn expr->cps [expr k-expr]
-  (if (not-seq? expr)
-    (atom->cps expr k-expr)
-    (cons->cps expr k-expr)))
+  (if (seq? expr)
+    (cons->cps expr k-expr)
+    (atom->cps expr k-expr)))
 
 (defn atom->cps [atom k-expr]
   `(~k-expr ~atom))
@@ -199,9 +197,9 @@
 
 (defmethod transform :function [[_ fdesignator :as acons] k-expr]
   (cond
-   (not-seq? fdesignator) (if (some #{fdesignator} (:local-functions *ctx*))
-                            `(~k-expr (make-funcallable ~acons))
-                            `(~k-expr ~acons))
+   (not (seq? fdesignator)) (if (some #{fdesignator} (:local-functions *ctx*))
+                              `(~k-expr (make-funcallable ~acons))
+                              `(~k-expr ~acons))
    (and (seq? (seq fdesignator))
         (is-fn? (first fdesignator))) `(~k-expr ~(lambda-expr->cps fdesignator k-expr))))
 
