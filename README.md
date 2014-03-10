@@ -19,12 +19,12 @@ A delimited continuations library for Clojure 1.4.0 (and 1.3.0). Portions based 
 (@cont1 2) ;; 15
 
 (reset
-  (+ 1 (reset (shift k
-                (reset! cont2 k)
-                (k 2)))
-       (reset (shift k
-                (reset! cont3 k)
-                (k 3))))) ;; 6
+  (+ 1 (shift k
+         (reset! cont2 k)
+         (k 2))
+       (shift k
+         (reset! cont3 k)
+         (k 3)))) ;; 6
 
 (@cont2 4) ;; 8
 (@cont3 10) ;; 15

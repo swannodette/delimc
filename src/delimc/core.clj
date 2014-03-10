@@ -200,7 +200,7 @@
 ;; ================================================================================
 
 (defmethod transform :reset [cons k-expr]
-  (expr-sequence->cps (rest cons) k-expr))
+  (transform (macroexpand-1 cons) k-expr))
 
 (defmacro unreset [& body]
   `(do ~@body))
@@ -222,7 +222,7 @@
 ;; Gives access to call-cc by transforming body to continuation passing style."
 (defmacro reset [& body]
   (binding [*ctx* (Context. nil)]
-    (expr-sequence->cps body identity)))
+    (expr-sequence->cps body `identity)))
 
 (defmacro fn-cc [args-list & body]
   `(reset
