@@ -8,7 +8,9 @@
 ;; CPS Transformer
 ;; ================================================================================
 
-(defmulti transform (fn [[op & forms] k-expr] (keyword op)))
+(defmulti transform
+  (fn [[op & forms] k-expr]
+    (some-> op keyword name keyword)))
 
 (defn is-fn? [fdesignator]
   (#{'fn 'clojure.core/fn 'clojure.core/fn* 'fn*} fdesignator))
@@ -16,7 +18,7 @@
 (defn check-for-fn [form]
   (let [sym (first form)]
     (if (is-fn? sym)
-      `(~'function ~form)
+      `(function ~form)
       form)))
 
 (defn atom->cps [atom k-expr]
@@ -48,7 +50,7 @@
       `(~app-sym ~(first r-args) ~k-expr ~@(rest r-args)))))
 
 (defn funcall->cps [acons k-expr args]
-  (application->cps 'funcall-cc acons k-expr args))
+  (application->cps `funcall-cc acons k-expr args))
 
 (defmethod transform :default [acons k-expr]
   (let [expansion (macroexpand-1 acons)
@@ -56,10 +58,10 @@
     (if expanded-p
       (expr->cps expansion k-expr)
       (funcall->cps
-       (cons `(~'function ~(first expansion)) (rest expansion)) k-expr nil))))
+       (cons `(function ~(first expansion)) (rest expansion)) k-expr nil))))
 
 (defn apply->cps [acons k-expr args]
-  (application->cps 'apply-cc acons k-expr args))
+  (application->cps `apply-cc acons k-expr args))
 
 ;; ================================================================================
 ;; Special form transformers
@@ -69,7 +71,7 @@
   (throw (Exception. "Please ensure shift is called from within the reset macro.")))
 
 (defmacro shift [k & body]
-  `(~'shift* (fn [~k] ~@body)))
+  `(shift* (fn [~k] ~@body)))
 
 (defmethod transform :shift* [cons k-expr]
   (when-not (= (count cons) 2)
@@ -130,7 +132,7 @@
 ;; Converts a lambda expression to CPS style.
 (defn lambda-expr->cps [[_ arglist & body] k-expr]
   (let [k (gensym)]
-    `(~'make-funcallable (fn [~k ~@arglist]
+    `(make-funcallable (fn [~k ~@arglist]
                            ~(expr-sequence->cps body k)))))
 
 (defn make-funcallable [afn]
@@ -138,11 +140,11 @@
 
 (defmethod transform :function [[_ fdesignator :as acons] k-expr]
   (cond
-   (not (seq? fdesignator)) (if (some #{fdesignator} (:local-functions *ctx*))
-                              `(~k-expr (make-funcallable ~acons))
-                              `(~k-expr ~acons))
-   (and (seq? (seq fdesignator))
-        (is-fn? (first fdesignator))) `(~k-expr ~(lambda-expr->cps fdesignator k-expr))))
+    (not (seq? fdesignator)) (if (some #{fdesignator} (:local-functions *ctx*))
+                               `(~k-expr (make-funcallable ~acons))
+                               `(~k-expr ~acons))
+    (and (seq? (seq fdesignator))
+         (is-fn? (first fdesignator))) `(~k-expr ~(lambda-expr->cps fdesignator k-expr))))
 
 ;; if
 ;; --------------------------------------------------------------------------------
@@ -198,7 +200,7 @@
 ;; ================================================================================
 
 (defmethod transform :reset [cons k-expr]
-  (expr-sequence->cps (rest cons) k-expr))
+  (transform (macroexpand-1 cons) k-expr))
 
 (defmacro unreset [& body]
   `(do ~@body))
@@ -220,7 +222,7 @@
 ;; Gives access to call-cc by transforming body to continuation passing style."
 (defmacro reset [& body]
   (binding [*ctx* (Context. nil)]
-    (expr-sequence->cps body identity)))
+    (expr-sequence->cps body `identity)))
 
 (defmacro fn-cc [args-list & body]
   `(reset

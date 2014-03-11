@@ -509,13 +509,20 @@
 
 ;; nested shift
 (deftest shift-nested
-  (is (= (let [cc (atom nil)]
+  (is (= (let [cc-outer (atom nil)
+               cc-inner (atom nil)]
            [(reset
-             (+ 1 (reset (shift k
-                                (reset! cc k)
-                                (k 2)))))
-            (@cc 4)])
-         [3 5])))
+             (+ 1
+                (shift k
+                       (reset! cc-outer k)
+                       (k 2))
+                (reset (shift k
+                              (reset! cc-inner k)
+                              (k 3)))))
+            (@cc-inner 5)
+            (@cc-outer 4)
+            (@cc-inner 5)])
+         [6 5 8 5])))
 
 ;; unreset
 (deftest unreset-1
@@ -564,3 +571,5 @@
 (deftest ref-1
   (is (= @(reset (ref {}))
          @(ref {}))))
+
+
