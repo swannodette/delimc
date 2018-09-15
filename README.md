@@ -52,6 +52,18 @@ To test for clojurescript by Leiningen:
 $ lein cljs-test
 ```
 
+To test for clojure by Clojure CLI:
+
+```
+$ clj -A:test
+```
+
+To test for clojurescript by Clojure CLI:
+
+```
+$ clj -A:cljs-test
+```
+
 References
 ----
 
