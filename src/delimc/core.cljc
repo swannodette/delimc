@@ -50,13 +50,19 @@
 (defn funcall->cps [acons k-expr args]
   (application->cps 'funcall-cc acons k-expr args))
 
+(defn current-compiler []
+  (if (= "cljs.core" (str (find-ns 'cljs.core)))
+    :cljs-compiler
+    :clj-compiler))
+
+#?(:clj
 (defmethod transform :default [acons k-expr]
-  (let [expansion (macroexpand-1 acons)
+  (let [expansion (clojure.core/macroexpand-1 acons)
         expanded-p (expanded? acons expansion)]
     (if expanded-p
       (expr->cps expansion k-expr)
       (funcall->cps
-       (cons `(~'function ~(first expansion)) (rest expansion)) k-expr nil))))
+       (cons `(~'function ~(first expansion)) (rest expansion)) k-expr nil)))))
 
 (defn apply->cps [acons k-expr args]
   (application->cps 'apply-cc acons k-expr args))
@@ -65,15 +71,19 @@
 ;; Special form transformers
 ;; ================================================================================
 
+(defn exception [m]
+  #?(:clj (Exception. m)
+     :cljs (js/Error. m)))
+
 (defn shift* [cc]
-  (throw (Exception. "Please ensure shift is called from within the reset macro.")))
+  (throw (exception "Please ensure shift is called from within the reset macro.")))
 
 (defmacro shift [k & body]
   `(~'shift* (fn [~k] ~@body)))
 
 (defmethod transform :shift* [cons k-expr]
   (when-not (= (count cons) 2)
-    (throw (Exception. "Please ensure shift has one argument.")))
+    (throw (exception "Please ensure shift has one argument.")))
   `(~(first (rest cons)) ~k-expr))
 
 ;; quote
@@ -164,9 +174,9 @@
 
 (defn transform-local-function [[fn-name fn-args & fn-forms :as afn]]
   (when-not (and fn-name (symbol? fn-name))
-    (throw (Exception. "Function name must be non-nil symbol")))
+    (throw (exception "Function name must be non-nil symbol")))
   (when (< (count afn) 2)
-    (throw (Exception. "Function arguments not specified")))
+    (throw (exception "Function arguments not specified")))
   `(~fn-name [k# ~@fn-args]
              (transform-forms-in-env ~fn-forms k# ~*ctx*)))
 
@@ -185,7 +195,7 @@
 
 (defmethod transform :letfn [[_ fn-list & forms :as acons] k-expr]
   (when (< (count acons) 2)
-    (throw (Exception. "Too few parameters to letfn")))
+    (throw (exception "Too few parameters to letfn")))
   (with-local-function-names
     (map first fn-list)
     `(letfn [~@(map (fn [afn]
