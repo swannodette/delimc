@@ -50,13 +50,41 @@
 (defn funcall->cps [acons k-expr args]
   (application->cps 'funcall-cc acons k-expr args))
 
+(defn current-compiler []
+  (if (= "cljs.core" (str (find-ns 'cljs.core)))
+    :cljs-compiler
+    :clj-compiler))
+
+#?(:clj
+;; Provide clojure.lang.Namespace with a namespace of symbol to expand the macro.
+(defn full-qualify [[op & args :as acons]]
+  (cond
+    (and (= op 'shift) (nil? (namespace op)))
+      (cons 'delimc.core/shift (rest acons))
+    (and (= op 'if-let) (nil? (namespace op)) )
+      (cons 'clojure.core/if-let (rest acons))
+    :else
+      acons)))
+
+#?(:clj
 (defmethod transform :default [acons k-expr]
-  (let [expansion (macroexpand-1 acons)
+  (let [expansion
+        (if (= :clj-compiler (current-compiler))
+          (macroexpand-1 acons)
+          ;; letfn environment masking doesn't work because of lein reloading.
+          ;; So, when local functions are defined, just pass them without calling
+          ;; macroexpand-1.
+          (if (some #{(first acons)} (:local-functions *ctx*))
+            acons
+            ;; use clojure.core/macroexpand-1 instead of analyze/macroexpand-1 which
+            ;; expands the macros like +, -, *, /., i.e. what is (or will be) defined 
+            ;; as a macro in clojurescript but as a function in clojure.
+            (clojure.core/macroexpand-1 (full-qualify acons))))
         expanded-p (expanded? acons expansion)]
     (if expanded-p
       (expr->cps expansion k-expr)
       (funcall->cps
-       (cons `(~'function ~(first expansion)) (rest expansion)) k-expr nil))))
+       (cons `(~'function ~(first expansion)) (rest expansion)) k-expr nil)))))
 
 (defn apply->cps [acons k-expr args]
   (application->cps 'apply-cc acons k-expr args))
@@ -65,15 +93,19 @@
 ;; Special form transformers
 ;; ================================================================================
 
+(defn exception [m]
+  #?(:clj (Exception. m)
+     :cljs (js/Error. m)))
+
 (defn shift* [cc]
-  (throw (Exception. "Please ensure shift is called from within the reset macro.")))
+  (throw (exception "Please ensure shift is called from within the reset macro.")))
 
 (defmacro shift [k & body]
   `(~'shift* (fn [~k] ~@body)))
 
 (defmethod transform :shift* [cons k-expr]
   (when-not (= (count cons) 2)
-    (throw (Exception. "Please ensure shift has one argument.")))
+    (throw (exception "Please ensure shift has one argument.")))
   `(~(first (rest cons)) ~k-expr))
 
 ;; quote
@@ -164,9 +196,9 @@
 
 (defn transform-local-function [[fn-name fn-args & fn-forms :as afn]]
   (when-not (and fn-name (symbol? fn-name))
-    (throw (Exception. "Function name must be non-nil symbol")))
+    (throw (exception "Function name must be non-nil symbol")))
   (when (< (count afn) 2)
-    (throw (Exception. "Function arguments not specified")))
+    (throw (exception "Function arguments not specified")))
   `(~fn-name [k# ~@fn-args]
              (transform-forms-in-env ~fn-forms k# ~*ctx*)))
 
@@ -185,7 +217,7 @@
 
 (defmethod transform :letfn [[_ fn-list & forms :as acons] k-expr]
   (when (< (count acons) 2)
-    (throw (Exception. "Too few parameters to letfn")))
+    (throw (exception "Too few parameters to letfn")))
   (with-local-function-names
     (map first fn-list)
     `(letfn [~@(map (fn [afn]
@@ -220,7 +252,7 @@
 ;; Gives access to call-cc by transforming body to continuation passing style."
 (defmacro reset [& body]
   (binding [*ctx* (Context. nil)]
-    (expr-sequence->cps body identity)))
+    (expr-sequence->cps body 'identity)))
 
 (defmacro fn-cc [args-list & body]
   `(reset

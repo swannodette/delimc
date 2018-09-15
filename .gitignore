@@ -3,3 +3,9 @@ pom.xml
 lib
 classes
 .lein-*
+.cpcache/
+
+/resources
+/target
+/classes
+/cljs-test-runner-out

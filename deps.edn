@@ -1,0 +1,15 @@
+{:deps
+ {org.clojure/clojure {:mvn/version "1.9.0"}
+  org.clojure/clojurescript {:mvn/version "1.10.238"}}
+
+ :aliases
+ {:test {:extra-paths ["test"]
+         :extra-deps
+         {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
+                                     :sha "3cb0a9daf1cb746259dc8309b218f9211ad3b33b"}}
+         :main-opts ["-m" "cognitect.test-runner"]}
+
+  :cljs-test {:extra-paths ["test"]
+              :extra-deps {olical/cljs-test-runner {:mvn/version "2.1.0"}}
+              :main-opts ["-m" "cljs-test-runner.main"]}}
+ }
