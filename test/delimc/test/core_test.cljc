@@ -7,7 +7,6 @@
 
 #?(:cljs (enable-console-print!))
 
-(comment
 ;; not-seq
 (deftest not-seq-1
   (is (= (reset 1) 1)))
@@ -567,10 +566,10 @@
   (is (= @(reset (atom nil))
          @(atom nil))))
 
+#?(:clj
 (deftest ref-1
   (is (= @(reset (ref {}))
-         @(ref {}))))
-)
+         @(ref {})))))
 
 #?(:cljs
 (defn -main []

@@ -57,7 +57,18 @@
 
 #?(:clj
 (defmethod transform :default [acons k-expr]
-  (let [expansion (clojure.core/macroexpand-1 acons)
+  (let [expansion
+        (if (= :clj-compiler (current-compiler))
+          (macroexpand-1 acons)
+          ;; letfn environment masking doesn't work because of lein reloading.
+          ;; So, when local functions are defined, just pass them without calling
+          ;; macroexpand-1.
+          (if (some #{(first acons)} (:local-functions *ctx*))
+            acons
+            ;; use clojure.core/macroexpand-1 instead of analyze/macroexpand-1 which
+            ;; expands the macros like +, -, *, /., i.e. what is (or will be) defined 
+            ;; as a macro in clojurescript but as a function in clojure.
+            (clojure.core/macroexpand-1 acons)))
         expanded-p (expanded? acons expansion)]
     (if expanded-p
       (expr->cps expansion k-expr)
@@ -230,7 +241,7 @@
 ;; Gives access to call-cc by transforming body to continuation passing style."
 (defmacro reset [& body]
   (binding [*ctx* (Context. nil)]
-    (expr-sequence->cps body identity)))
+    (expr-sequence->cps body 'identity)))
 
 (defmacro fn-cc [args-list & body]
   `(reset
