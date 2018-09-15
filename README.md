@@ -37,6 +37,22 @@ A delimited continuations library for Clojure 1.4.0 (and 1.3.0). Portions based 
 (@cont4 ", yesterday was ") ; "Hello, yesterday was a nice day"
 ```
 
+Test
+----
+
+To test for clojure:
+
+```
+$ lein test
+```
+
+To test for clojurescript:
+
+```
+$ lein cljs-test
+```
+
+
 References
 ----
 
