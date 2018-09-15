@@ -3,3 +3,7 @@ pom.xml
 lib
 classes
 .lein-*
+
+/resources
+/target
+/classes
