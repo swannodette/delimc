@@ -3,6 +3,7 @@ pom.xml
 lib
 classes
 .lein-*
+.cpcache/
 
 /resources
 /target
