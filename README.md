@@ -40,18 +40,17 @@ A delimited continuations library for Clojure 1.4.0 (and 1.3.0). Portions based 
 Test
 ----
 
-To test for clojure:
+To test for clojure by Leiningen:
 
 ```
 $ lein test
 ```
 
-To test for clojurescript:
+To test for clojurescript by Leiningen:
 
 ```
 $ lein cljs-test
 ```
-
 
 References
 ----
