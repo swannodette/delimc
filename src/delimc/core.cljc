@@ -56,6 +56,17 @@
     :clj-compiler))
 
 #?(:clj
+;; Provide clojure.lang.Namespace with a namespace of symbol to expand the macro.
+(defn full-qualify [[op & args :as acons]]
+  (cond
+    (and (= op 'shift) (nil? (namespace op)))
+      (cons 'delimc.core/shift (rest acons))
+    (and (= op 'if-let) (nil? (namespace op)) )
+      (cons 'clojure.core/if-let (rest acons))
+    :else
+      acons)))
+
+#?(:clj
 (defmethod transform :default [acons k-expr]
   (let [expansion
         (if (= :clj-compiler (current-compiler))
@@ -68,7 +79,7 @@
             ;; use clojure.core/macroexpand-1 instead of analyze/macroexpand-1 which
             ;; expands the macros like +, -, *, /., i.e. what is (or will be) defined 
             ;; as a macro in clojurescript but as a function in clojure.
-            (clojure.core/macroexpand-1 acons)))
+            (clojure.core/macroexpand-1 (full-qualify acons))))
         expanded-p (expanded? acons expansion)]
     (if expanded-p
       (expr->cps expansion k-expr)
