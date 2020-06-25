@@ -118,7 +118,7 @@
                                 (reset! cc k)
                                 (k 2)))))
             (@cc 4)])
-         [3 5])))
+         [3 4])))
 
 ;; unreset
 (deftest unreset-1
