@@ -1,6 +1,7 @@
 # delimc
 
-A delimited continuations library for Clojure/Script.
+A [delimited continuations](https://en.wikipedia.org/wiki/Delimited_continuation) library for Clojure/Script.
+
 Portions based on cl-cont by Slava Akhmechet (http://defmacro.org).
 
 ## Usage
