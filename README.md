@@ -7,37 +7,17 @@ Portions based on cl-cont by Slava Akhmechet (http://defmacro.org).
 ## Usage
 
 ```clojure
-(def cont1 (atom nil))
-(def cont2 (atom nil))
-(def cont3 (atom nil))
-(def cont4 (atom nil))
+(require '[delimc.core :refer [reset shift]])
 
-(reset (+ 1 (apply (fn [a b c]
-                     (+ (shift k
-                          (reset! cont1 k)
-                            (k 1))
-                         a b c))
-                    3 4 (list 5)))) ;; 14
-
-(@cont1 2) ;; 15
+(defmacro amb [xs]
+  `(shift k# (mapcat k# ~xs)))
 
 (reset
-  (+ 1 (shift k
-         (reset! cont2 k)
-         (k 2))
-       (shift k
-         (reset! cont3 k)
-         (k 3)))) ;; 6
-
-(@cont2 4) ;; 8
-(@cont3 10) ;; 15
-
-(reset (str "Hello" (shift k
-                      (reset! cont4 k)
-                        (k ", today is "))
-            "a nice day!")) ; "Hello, today is a nice day"
-
-(@cont4 ", yesterday was ") ; "Hello, yesterday was a nice day"
+ (let [x (amb [1 2 3])
+       y (amb [2 4 6])]
+    (if (zero? (mod (+ x y) 3))
+      [[x y]])))
+;; => ([1 2] [2 4] [3 6])
 ```
 
 ## Test
