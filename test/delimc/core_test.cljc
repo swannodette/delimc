@@ -1,6 +1,12 @@
-(ns delimc.test.core
-  (:use [delimc.core] :reload)
-  (:use [clojure.test]))
+(ns delimc.core-test
+  (:require #?(:clj  [clojure.test :refer :all]
+               :cljs [cljs.test :refer-macros [deftest is run-tests]])
+            #?(:clj  [delimc.core :refer :all]
+               :cljs [delimc.core
+                      :refer [function funcall-cc fn-cc apply-cc make-funcallable shift*]
+                      :refer-macros [shift reset unreset]])))
+
+#?(:cljs (enable-console-print!))
 
 ;; not-seq
 (deftest not-seq-1
@@ -568,8 +574,14 @@
   (is (= @(reset (atom nil))
          @(atom nil))))
 
+#?(:clj
 (deftest ref-1
   (is (= @(reset (ref {}))
-         @(ref {}))))
+         @(ref {})))))
 
+#?(:cljs
+   (defn -main []
+     (run-tests)))
 
+#?(:cljs
+   (set! *main-cli-fn* -main))

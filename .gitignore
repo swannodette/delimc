@@ -4,3 +4,6 @@ lib
 classes
 .lein-*
 target
+.cpcache/
+resources
+cljs-test-runner-out
